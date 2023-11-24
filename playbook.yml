@@ -1,0 +1,35 @@
+---
+- name: Mon playbook de deploiement
+  hosts: prod
+  become: yes
+  vars_files:
+    - files/secrets/credentials.vault
+  tasks:
+  - name: Installation de git et curl
+    ansible.builtin.yum:
+      name:
+        - curl
+        - git
+        - httpd
+      state: present
+    when: ansible_distribution == "CentOS"
+  
+  - name: Desactivation SELinux
+    ansible.posix.selinux:
+      policy: targeted
+      state: permissive
+
+  - name: Copie du fichier index.html
+    template:
+      src: index.html.j2
+      dst: /etc/httpd/cond.d/index.html
+      owner: choco
+      group: choco
+      mode: 0644
+
+  - name: Lancement du service Apache
+    systemd:
+      name: httpd
+      state: started
+      enabled: yes
+...

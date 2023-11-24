@@ -1,0 +1,15 @@
+---
+all:
+  vars:
+    ansible_ssh_user: choco
+    ansible_ssh_password: choco
+    #ansible_user: admin
+    #ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+  prod:
+    vars:
+      env: production
+    hosts:
+      #192.168.1.39:
+      apache-server: 
+        ansible_host: 192.168.1.39
+...
