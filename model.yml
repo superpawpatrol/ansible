@@ -1,0 +1,79 @@
+deploy.yml
+---
+- name: "Deploiement de Apache"
+  hosts: prod
+  tasks:
+    - name: "Installation Apache"
+      yum:
+        name: httpd
+        state: latest
+
+    - name: "Modification SE Linux"
+      selinux:
+        state: disabled
+
+    - name: "Ouvrir le port 80"
+      ansible.posix.firewalld:
+        port: 80/tcp
+        immediate: true
+        permanent: true
+        state: enabled
+
+    - name: "Lancement du service Apache"
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+...
+inventory.yml
+---
+all:
+  children:
+    prod:
+      hosts:
+        192.168.1.39:
+...
+group_vars/prod.yaml
+---
+vars:
+  ansible_ssh_user: choco
+  ansible_ssh_password: choco
+  remote_user: choco
+  become: yes
+...
+
+inventory.yml dans ansible
+---
+all:
+  children:
+    ungrouped:
+      hosts:
+        192.168.1.39
+...
+playbook.yml
+---
+- name: "Playbook exemple"
+  hosts: all
+  remote_user: choco
+  become: yes
+  tasks:
+  - name: "Creation du fichier toto.txt"
+    file:
+      state: touch
+      path: "/tmp/toto.txt"
+      mode: 0777
+
+  - name: "Ajout de la ligne"
+    lineinfile:
+      path: "/tmp/toto.txt"
+      line: "Bonjour Easytraining"
+
+  - name: "Lecture du fichier"
+    command: "cat /tmp/toto.txt"
+    register: file
+
+  - name: "Affichage file"
+    debug:
+      var: file.stdout
+    #debug:
+      #msg: "Contenu du fichier : {{ lookup('ansible.builtin.file', '/tmp/toto.txt') }}"
