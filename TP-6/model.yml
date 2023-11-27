@@ -1,0 +1,35 @@
+inventory.yml dans ansible
+---
+all:
+  children:
+    ungrouped:
+      hosts:
+        192.168.1.39
+...
+playbook.yml
+---
+- name: "Playbook exemple"
+  hosts: all
+  remote_user: choco
+  become: yes
+  tasks:
+  - name: "Creation du fichier toto.txt"
+    file:
+      state: touch
+      path: "/tmp/toto.txt"
+      mode: 0777
+
+  - name: "Ajout de la ligne"
+    lineinfile:
+      path: "/tmp/toto.txt"
+      line: "Bonjour Easytraining"
+
+  - name: "Lecture du fichier"
+    command: "cat /tmp/toto.txt"
+    register: file
+
+  - name: "Affichage file"
+    debug:
+      var: file.stdout
+    #debug:
+      #msg: "Contenu du fichier : {{ lookup('ansible.builtin.file', '/tmp/toto.txt') }}"

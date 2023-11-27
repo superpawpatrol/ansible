@@ -1,0 +1,8 @@
+---
+vars:
+  ansible_ssh_user: choco
+  ansible_ssh_password: choco
+  ansible_password: {{ vault_ansible_password }}
+  remote_user: choco
+  become: yes
+...
