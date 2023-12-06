@@ -1,0 +1,16 @@
+---
+all:
+  children:
+    prod:
+      vars:
+        env: production
+      hosts:
+        192.168.1.39:
+      #apache-server:
+        #ansible_host: 192.168.1.39
+    dev:
+      vars:
+        env: developpement
+      hosts:
+        192.168.1.99:
+...

@@ -1,0 +1,69 @@
+---
+- name: Deply Wordpress on docker
+  hosts: prod
+  tasks:
+  - name : Installation des pré requis
+    ansible.builtin.yum:
+      name:
+        - curl
+        - git
+        - httpd
+        - yum-utils
+      state: present
+    when: ansible_distribution == "CentOS"
+
+  - name: Ajout de repository
+    ansible.builtin.yum_repository:
+      name: docker
+      description: Docker CE
+      baseurl: https://download.docker.com/linux/centos/docker-ce.repo
+      gpgcheck: no
+
+  - name: Installation des packages Docker
+    ansible.builtin.yum:
+      name:
+        - docker-ce
+        - docker-ce-cli
+        - containerd.io
+        - docker-buildx-plugin
+        - docker-compose-plugin
+      state: latest
+    when: ansible_distribution == "CentOS"
+
+  - name: Desactivation SELinux
+    ansible.posix.selinux:
+      policy: targeted
+      state: permissive
+
+  - name: "Ouvrir le port 80"
+    ansible.posix.firewalld:
+      port: 
+        - 80/tcp
+        - 8080/tcp
+      immediate: true
+      permanent: true
+      state: enabled
+
+  - name: Copie du fichier index.html
+    template:
+      src: index.html.j2
+      dest: /var/www/html/index.html
+      owner: choco
+      group: choco
+      mode: 0644
+
+  - name: Lancement du service Apache
+    systemd:
+      name: httpd
+      state: started
+      enabled: yes
+  
+  - name: Start a container
+    community.docker.docker_container:
+      name: myapplication
+      image: wordpress
+      state: present
+      ports:
+       # Publish container port 80 as host port 8080
+       - "8080:80"
+...
