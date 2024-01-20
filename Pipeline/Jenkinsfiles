@@ -1,0 +1,101 @@
+pipeline {
+    agent {
+        kubernetes {
+            // Here you define your YAML or refer to an existing pod template
+            yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    some-label: some-label-value
+spec:
+  containers:
+  - name: jnlp
+    image: jenkins/inbound-agent:latest
+    # Define other container parameters as needed
+"""
+        }
+    }
+    environment {
+        accountId = 'yourAccountId'
+    }
+    stages {
+        stage('Initialization') {
+            steps {
+                script {
+                    // Using withCredentials to inject the secrets
+                    withCredentials([string(credentialsId: 'client-id', variable: 'CLIENT_ID'),
+                                     string(credentialsId: 'client-secret', variable: 'CLIENT_SECRET')]) {
+                        // Using withEnv to set additional environment variables
+                        withEnv(["ACCOUNT_ID=${env.accountId}"]) {
+                            // Appel API avec curl et utilisation des identifiants
+                            def apiResponse = sh(script: "curl -u $CLIENT_ID:$CLIENT_SECRET -s https://exemple.com/api", returnStdout: true).trim()
+                            def apa1 = sh(script: "curl -s -X GET -H 'Content-Type: application/json' -d '{\"client_id\": \"$CLIENT_ID\", \"client_secret\": \"$CLIENT_SECRET\"}' -u $CLIENT_ID:$CLIENT_SECRET -s https://exemple.com/api", returnStdout: true).trim()
+                            def api2 = sh(script: "curl -s -X POST -H 'Content-Type: application/json' -d '{\"client_id\": \"$CLIENT_ID\", \"client_secret\": \"$CLIENT_SECRET\"}' -u $CLIENT_ID:$CLIENT_SECRET -s https://exemple.com/api", returnStdout: true).trim()
+                            sh "echo ${api2}"
+                            // Affichage des informations
+                            echo "Informations récupérées: ${apiResponse}"
+                            // Perform API calls with curl here
+                            sh """
+                            curl -u $CLIENT_ID:$CLIENT_SECRET https://api.example.com/some/endpoint
+                            """
+                        }
+                    }
+                }
+            }
+        }
+        stage('Deployment') {
+            steps {
+                script {
+                    // Exécution d'un script Shell
+                    sh './chemin/vers/votre/script.sh'
+                    // Application de Terraform
+                    sh 'terraform apply -auto-approve'
+                    // Utilisation des identifiants
+                    withCredentials([string(credentialsId: 'client-id', variable: 'CLIENT_ID'),
+                                     string(credentialsId: 'client-secret', variable: 'CLIENT_SECRET')]) {
+                        withEnv(["ACCOUNT_ID=${env.accountId}"]) {
+                            // Execute deployment shell script
+                            sh './deploy.sh'
+                            sh 'cd /path/to/terraform && ./deploy.sh'
+                            // Apply Terraform
+                            sh 'terraform apply -auto-approve'
+                            sh 'cd /path/to/terraform && terraform apply -auto-approve'
+                        }
+                    }
+                }
+            }
+        }
+        stage('Finalization') {
+            steps {
+                script {
+                    //L'instruction withEnv en Jenkins permet de définir des variables d'environnement spécifiques pour un bloc de code donné dans votre pipeline. 
+                    //Ces variables d'environnement sont temporaires et ne modifient pas les valeurs globales d'environnement du système.
+                    //Dans cet exemple, withEnv permet de définir temporairement la variable d'environnement MY_VARIABLE pour le bloc de code à l'intérieur.
+                    //Une fois ce bloc terminé, la variable d'environnement n'est plus disponible.
+                    // Définition d'une variable d'environnement temporaire
+                    withEnv(['MY_VARIABLE=value']) {
+                        // Cette variable d'environnement est uniquement disponible ici
+                        sh 'echo "Variable temporaire: $MY_VARIABLE"'
+                    }
+                }
+            }
+        }
+    }
+    post {
+        failure {
+            echo 'An error has occurred.'
+        }
+        always {
+            // Affichage des logs d'erreur si le pipeline a echoué
+            catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                sh 'cat /path/to/terraform/terraform.log'
+                /*L'expression catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') est utilisée dans les pipelines Jenkins pour gérer les erreurs et les échecs lors de l'exécution d'une étape spécifique du pipeline. Elle permet de capturer les erreurs qui se produisent dans cette étape particulière sans que cela n'affecte le résultat global du pipeline.
+Dans cette expression, les deux paramètres buildResult et stageResult ont des significations distinctes.
+buildResult: Ce paramètre définit le résultat global du pipeline en cas d'erreur dans l'étape. Si l'erreur est capturée par la fonction catchError, le résultat global du pipeline sera toujours marqué comme "SUCCESS", même si l'étape a échoué. Cela permet de poursuivre l'exécution du pipeline même si l'une des étapes rencontre des problèmes.
+stageResult: Ce paramètre définit le résultat spécifique de l'étape qui a rencontré l'erreur. Même si le résultat global du pipeline est "SUCCESS", l'étape qui a échoué sera marquée comme "FAILURE". Cela permet de détecter les échecs d'étapes spécifiques et de prendre des mesures appropriées, telles que l'envoi d'un e-mail d'alerte ou la mise en pause du pipeline.
+En utilisant l'expression catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE'), vous pouvez gérer les erreurs de manière flexible tout en continuant à exécuter le pipeline de manière globale. Cela permet d'améliorer la robustesse et la tolérance aux pannes de vos pipelines Jenkins.*/
+            }
+        }
+    }
+}
