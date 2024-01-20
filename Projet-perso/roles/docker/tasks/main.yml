@@ -1,0 +1,43 @@
+---
+# Installation de Apache
+- name: Installation de yum utils
+  ansible.builtin.dnf:
+    name:
+      - yum-utils
+    state: latest
+  when: ansible_distribution == "CentOS"
+
+- name: Ajout du repository Docker
+  ansible.builtin.yum_repository:
+    name: docker-ce
+    description: Docker repo
+    baseurl: https://download.docker.com/linux/centos/docker-ce.repo
+    gpgcheck: no
+    #gpgkey: ""
+
+- name: Installation de Docker
+  ansible.builtin.yum:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+
+- name: Lancement du service Docker
+  ansible.builtin.systemd_service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Creation Wordpress container
+  community.docker.docker_container:
+    name: wordpress
+    image: worpress
+    published_ports:
+    - 8080:80
+    detach: true
+    restart: true
+    #state: started
+...

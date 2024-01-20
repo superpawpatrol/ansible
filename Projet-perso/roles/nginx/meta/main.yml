@@ -1,0 +1,22 @@
+galaxy_info:
+  author: Ioannis Mosutakis
+  description: Installs Nginx and configure a minimal test webserver
+  company: ACME Corp
+  licence: Apache-2.0
+  role_name: webserver
+
+  min_ansible_version: "2.1"
+
+  platforms:
+  - name: Ubuntu
+    versions:
+      - bionic
+      - focal
+  
+  galaxy_tags:
+    - nginx
+    - webserver
+    - development
+    - test
+
+  dependencies: []

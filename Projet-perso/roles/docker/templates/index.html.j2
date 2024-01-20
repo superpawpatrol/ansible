@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Ma page Super Paw Patrol</title>
+        <meta charset="utf-8" />
+    </head>
+    <body>
+        <h1>Information Ansible</h1>
+        <p>
+            {{ ansible_managed | comment }}
+        </p>
+
+        <h2>Welcome</h2>
+        <p>
+        Bienvenue sur le site web par défaut du serveur {{ ansible_hostname }} en {{ env }} <br>
+        {{ ansible_user }}
+        </p>
+    </body>
+</html>

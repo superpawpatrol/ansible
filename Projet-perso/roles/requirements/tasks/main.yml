@@ -1,0 +1,64 @@
+---
+# Générer la clé ssh du user ansible
+# Vérifier la présence du groupe wheel
+# Autoriser le sudo sans password au groupe wheel
+# Créer un user ansible nologin appartenant au groupe wheel
+# Copier la clé ssh et la positionner dans les authorized_key
+- name: Mise en place des pré requis
+  #hosts: dev
+  tasks:
+    - name: Generate SSH key "{{ ssh_key_filename }}"
+      openssh_keypair:
+      #path: "~/.ssh/{{ ssh_key_filename }}"
+      path: "/home/{{ ssh_key_filename }}"
+      type: rsa
+      size: 4096
+      state: present
+      force: no
+    run_once: true
+    delegate_to: localhost
+
+  # Vérifier la présence du groupe wheel
+    - name: Make sure we have a 'wheel' group
+      group:
+        name: wheel
+        state: present
+
+  # Autoriser wheel dans sudoers sans password
+    - name: Allow 'wheel' group ti have passwordless sudo
+      lineinfile:
+        dest: /etc/sudoers
+        state: present
+        regexp: '^%wheel'
+        line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+        validate: visudo -cf %s
+
+  # Ajout du user ansible
+    - name: Add the user 'ansible', appending the group 'wheel'
+      ansible.builtin.user:
+        name: ansible
+        comment: "Ansible nologin user"
+        uid: 9000
+        shell: /usr/sbin/nologin
+        groups: wheel
+        append: yes
+        state: present
+
+  # Copie sur les clients de la clé ssh créé en amont
+    - name: Set authorized key taken from file
+      ansible.posix.authorized_key:
+        user: ansible
+        state: present
+        #key: "{{ lookup('file', '/home/ansible/.ssh/id_rsa_ansible.pub') }}"
+        key: "{{ lookup('file', '/home/id_rsa_ansible.pub') }}"
+  
+  # Test du user ansible
+    - name: Test du bon fonctionnement du user ansible
+      ansible.builtin.yum:
+        name: "*"
+        state: latest
+        become_user: ansible
+        become: true
+      #when: ansible_facts['ansible_distribution'] == 'CentOS' or ansible_facts['ansible_distribution'] == 'RedHat'
+      when: ansible_facts['os_family'] == "RedHat"
+...
